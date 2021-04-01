@@ -3,52 +3,102 @@ const Gameboard = (() =>{
     const playerX = "X";
     const playerO = "O";
     //should be 3x3 array 2D
-    const gameboardClean = [[null,null,null],
-                    [null,null,null],
-                    [null,null,null]];
-    let gameboard = [[playerX,playerX,playerO],
-                    [playerO,playerO,playerX],
-                    [playerX,playerO,playerX]];
-    let alternatingBool = false;
+    let gameboard = [["T","I","C"],
+                    ["T","A","C"],
+                    ["T","O","E"]];
     const setGameboard = function(x,y,value){
-        if(alternatingBool){
-            value = "O";
-            alternatingBool = false;
-        }
-        else{
-            value = "X";
-            alternatingBool = true;
-        }
         if(gameboard[x][y] === null){
             //if playerX then place X
             //if playerO then place O
             gameboard[x][y] = value;
-            DisplayController.refreshDisplay();
         }
         else{
             return;
         }
-        GameController.updateGameState();
     }
     const getGameboard = function(){
         return gameboard;
     }
     const checkGameboardFull = function(){
-        gameboard.forEach(element => {
-            if(element===null){
-                return false;
+        for(i=0;i<gameboard.length;i++){
+            for(j=0;j<gameboard.length;j++){
+                if(gameboard[i][j] === null){
+                    return false;
+                }
             }
-        });
+        }
         return true;
     }
     const cleanGameboard = function(){
-        gameboard = gameboardClean;
+        gameboard = [[null,null,null],
+                    [null,null,null],
+                    [null,null,null]];
+    }
+    const checkRow = function(rowIndex){
+        return gameboard[rowIndex].every(function(value){
+            if(value === null){
+                return false;
+            }
+            return value === gameboard[rowIndex][0];
+        })
+    }
+    const checkColumn = function(columnIndex){
+        let columnArray = [];
+        for(i=0;i<gameboard.length;i++){
+            columnArray.push(gameboard[i][columnIndex]);
+        }
+        return columnArray.every(function(value){
+            if(value === null){
+                return false;
+            }
+            return value === columnArray[0];
+        })
+    }
+    const checkDiagonalLeft = function(){
+        let diagonalArray = [];
+        diagonalArray.push(gameboard[0][0]);
+        diagonalArray.push(gameboard[1][1]);
+        diagonalArray.push(gameboard[2][2]);
+        return diagonalArray.every(function(value){
+            if(value === null){
+                return false;
+            }
+            return value === diagonalArray[0];
+        })
+    }
+    const checkDiagonalRight = function(){
+        let diagonalArray = [];
+        diagonalArray.push(gameboard[0][2]);
+        diagonalArray.push(gameboard[1][1]);
+        diagonalArray.push(gameboard[2][0]);
+        return diagonalArray.every(function(value){
+            if(value === null){
+                return false;
+            }
+            return value === diagonalArray[0];
+        })
+    }
+    const checkWin = function(indexRow,indexColumn){
+        if(checkRow(indexRow)){
+            //check which player wins and alert it - then reset
+            console.log(`WIN ${indexRow} row`);
+        }
+        if(checkColumn(indexColumn)){
+            console.log(`WIN ${indexColumn} column`);
+        }        
+        if(checkDiagonalLeft()){
+            console.log(`WIN left`);
+        }
+        if(checkDiagonalRight()){
+            console.log(`WIN right`);
+        }
     }
     return{
         setGameboard, 
         getGameboard,
         cleanGameboard,
-        checkGameboardFull
+        checkGameboardFull,
+        checkWin
     };
 })();
 //players objects - factory
@@ -70,20 +120,11 @@ const DisplayController = (() =>{
 
             displayGameboard2DArray[i][j].addEventListener("click", function(){
                 Gameboard.setGameboard(parseInt(this.index.toString().slice(0,1)), parseInt(this.index.toString().slice(1)),"xd");
+                Gameboard.checkWin(parseInt(this.index.toString().slice(0,1)), parseInt(this.index.toString().slice(1)));
+                GameController.updateGameState();
             });
         }
     }
-    /*Gameboard.getGameboard().addEventListener("change", function(){
-        console.log("here?");
-        refreshDisplay();
-    })*/
-    
-    /*displayGameboard2DArray.forEach(gridRow => {
-        gridRow.forEach(gridItem => {
-            console.log(gridItem);
-            gridItem.textContent = "X";
-        });
-    });*/
     const refreshDisplay = function(){
         for(i=0;i<Gameboard.getGameboard().length;i++){
             for(j=0;j<Gameboard.getGameboard().length;j++){
@@ -101,11 +142,13 @@ const GameController = (() =>{
     //control the flow of the game
     const updateGameState = function(){
         if(Gameboard.checkGameboardFull()){
+            //console.log("board is full");
             Gameboard.cleanGameboard();
-            DisplayController.refreshDisplay();
+            //console.log("cleaned");
+            //console.log(Gameboard.checkGameboardFull());
         }
+        DisplayController.refreshDisplay();
     }
-    updateGameState();
     return{
         updateGameState
     };
