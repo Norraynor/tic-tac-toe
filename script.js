@@ -48,7 +48,7 @@ const Gameboard = (() =>{
             columnArray.push(gameboard[i][columnIndex]);
         }
         return columnArray.every(function(value){
-            if(value === null){
+            if(value === null || value === "T"){
                 return false;
             }
             return value === columnArray[0];
@@ -82,15 +82,24 @@ const Gameboard = (() =>{
         if(checkRow(indexRow)){
             //check which player wins and alert it - then reset
             console.log(`WIN ${indexRow} row`);
+            GameController.setGameWin(true);
         }
         if(checkColumn(indexColumn)){
             console.log(`WIN ${indexColumn} column`);
+            GameController.setGameWin(true);
         }        
         if(checkDiagonalLeft()){
             console.log(`WIN left`);
+            GameController.setGameWin(true);
         }
         if(checkDiagonalRight()){
             console.log(`WIN right`);
+            GameController.setGameWin(true);
+        }
+    }
+    const checkTie = function(){
+        if(checkGameboardFull() && !GameController.getGameWin()){
+            console.log("its a TIE");
         }
     }
     return{
@@ -98,7 +107,8 @@ const Gameboard = (() =>{
         getGameboard,
         cleanGameboard,
         checkGameboardFull,
-        checkWin
+        checkWin,
+        checkTie
     };
 })();
 //players objects - factory
@@ -121,6 +131,7 @@ const DisplayController = (() =>{
             displayGameboard2DArray[i][j].addEventListener("click", function(){
                 Gameboard.setGameboard(parseInt(this.index.toString().slice(0,1)), parseInt(this.index.toString().slice(1)),"xd");
                 Gameboard.checkWin(parseInt(this.index.toString().slice(0,1)), parseInt(this.index.toString().slice(1)));
+                Gameboard.checkTie();
                 GameController.updateGameState();
             });
         }
@@ -139,17 +150,28 @@ const DisplayController = (() =>{
 
 //game controller object - module (IIFE)
 const GameController = (() =>{
+    let gameEnd = false;
     //control the flow of the game
     const updateGameState = function(){
         if(Gameboard.checkGameboardFull()){
-            //console.log("board is full");
+            //go to endgame function where winner and end screen is displayed
             Gameboard.cleanGameboard();
-            //console.log("cleaned");
-            //console.log(Gameboard.checkGameboardFull());
         }
         DisplayController.refreshDisplay();
     }
+    const endGame = function(){
+        //end the game and reset board
+    }
+    const setGameWin = function(value){
+        gameEnd = value;
+    }
+    const getGameWin = function(){
+        return gameEnd;
+    }
     return{
-        updateGameState
+        updateGameState,
+        endGame,
+        setGameWin,
+        getGameWin
     };
 })();
