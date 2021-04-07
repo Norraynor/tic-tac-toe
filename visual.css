@@ -19,3 +19,24 @@
 .grid-item:hover{
     background-color: green;
 }
+#selector-container{
+    text-align: center;
+}
+#player-selector{
+    padding-bottom: 2em;
+}
+#player-selector button{
+    width: 3rem;
+    height: 3rem;
+    border-width: 1px;
+    font-size: 2rem;
+    padding: 0;
+    box-sizing: content-box;
+    margin: 0 10px;
+}
+button{
+    background-color: white;
+}
+.selected{
+    background-color: green;
+}

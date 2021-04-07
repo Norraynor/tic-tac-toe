@@ -111,13 +111,16 @@ const Gameboard = (() =>{
         checkTie
     };
 })();
-//players objects - factory
 
 const DisplayController = (() =>{
     //shows game state in browser
     const displayedGameboard = document.querySelectorAll(".grid-item");
     const displayGameboardArray = Array.from(displayedGameboard);
     const displayGameboard2DArray = [];
+    const buttonO = document.querySelector("#o-select");
+    const buttonX = document.querySelector("#x-select");
+    let playerSelection;
+    let playerSelected;
 
     while(displayGameboardArray.length) {
         displayGameboard2DArray.push(displayGameboardArray.splice(0,Gameboard.getGameboard().length));
@@ -143,14 +146,70 @@ const DisplayController = (() =>{
             }
         }
     }
+    const selectPlayer = function(event){
+        if(!playerSelection){
+            playerSelection = event.target.dataset.piece;
+            playerSelected = true;
+            if(event.target.dataset.piece === "x"){
+                if(!event.target.classList.contains("selected") && !buttonO.classList.contains("selected")){
+                    event.target.classList.add("selected");
+                }
+            }
+            if(event.target.dataset.piece === "o"){
+                if(!event.target.classList.contains("selected") && !buttonX.classList.contains("selected")){
+                    event.target.classList.add("selected");
+                }
+            }
+            GameController.setPlayers(playerSelection);
+        }
+        else{
+            console.log("player already selected");
+        }
+    }   
+    const getPlayerSelection = function(){
+        return playerSelection; 
+    }
+    buttonO.addEventListener("click",selectPlayer);
+    buttonX.addEventListener("click",selectPlayer);
     return {
-        refreshDisplay
+        refreshDisplay,
+        getPlayerSelection
     };
 })();
+
+//players objects - factory
+const Player = (playerPiece)=>{  
+    const playerSelectedPiece = playerPiece;
+    const getPlayerPiece = function(){
+        return playerSelectedPiece;
+    }
+    return{
+        getPlayerPiece
+    }
+}
 
 //game controller object - module (IIFE)
 const GameController = (() =>{
     let gameEnd = false;
+    let playerOne;
+    let computerPlayer;
+    const setPlayers = function(playerPiece){
+        playerOne = Player(playerPiece);
+        if(playerPiece === "x"){
+            computerPlayer = Player("o");
+        }
+        if(playerPiece === "o"){
+            computerPlayer = Player("x");
+        }
+
+    }
+    let playerTurn = true;
+    /*
+    add turns...
+    add computer play (random select from remaining free elements)
+    add win message or lose or tie
+    add start/restart button
+    */
     //control the flow of the game
     const updateGameState = function(){
         if(Gameboard.checkGameboardFull()){
@@ -158,6 +217,14 @@ const GameController = (() =>{
             Gameboard.cleanGameboard();
         }
         DisplayController.refreshDisplay();
+    }
+    const currentPlayer = function(){
+        if(playerTurn){
+            return playerOne.getPlayerPiece();
+        }
+        else{
+            return computerPlayer.getPlayerPiece();
+        }
     }
     const endGame = function(){
         //end the game and reset board
@@ -168,10 +235,18 @@ const GameController = (() =>{
     const getGameWin = function(){
         return gameEnd;
     }
+    const getPlayers = function(){
+        console.log("player piece: "+playerOne.getPlayerPiece());
+        console.log("opponent: "+computerPlayer.getPlayerPiece());
+    }
     return{
         updateGameState,
         endGame,
         setGameWin,
-        getGameWin
+        getGameWin,
+        getPlayers,
+        setPlayers,
+        currentPlayer
     };
 })();
+
