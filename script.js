@@ -7,13 +7,18 @@ const Gameboard = (() =>{
                     ["T","A","C"],
                     ["T","O","E"]];
     const setGameboard = function(x,y,value){
-        if(gameboard[x][y] === null){
-            //if playerX then place X
-            //if playerO then place O
-            gameboard[x][y] = value;
+        if(value === null){
+            return;
         }
         else{
-            return;
+            if(gameboard[x][y] === null){
+                //if playerX then place X
+                //if playerO then place O
+                gameboard[x][y] = value;
+            }
+            else{
+                return;
+            }
         }
     }
     const getGameboard = function(){
@@ -119,6 +124,7 @@ const DisplayController = (() =>{
     const displayGameboard2DArray = [];
     const buttonO = document.querySelector("#o-select");
     const buttonX = document.querySelector("#x-select");
+    const turnDisplay = document.querySelector("#turn-display");
     let playerSelection;
     let playerSelected;
 
@@ -132,10 +138,16 @@ const DisplayController = (() =>{
             displayGameboard2DArray[i][j].index = (i+""+j);
 
             displayGameboard2DArray[i][j].addEventListener("click", function(){
-                Gameboard.setGameboard(parseInt(this.index.toString().slice(0,1)), parseInt(this.index.toString().slice(1)),"xd");
+                if(gameStarted){
+                    //should be possible to change anything only when game is started
+                }
+                Gameboard.setGameboard(parseInt(this.index.toString().slice(0,1)), parseInt(this.index.toString().slice(1)),GameController.currentPlayer());
                 Gameboard.checkWin(parseInt(this.index.toString().slice(0,1)), parseInt(this.index.toString().slice(1)));
                 Gameboard.checkTie();
                 GameController.updateGameState();
+                //set turn 
+                GameController.changeTurn();
+                changeTurnDisplay(GameController.getCurrentTurn());
             });
         }
     }
@@ -144,6 +156,19 @@ const DisplayController = (() =>{
             for(j=0;j<Gameboard.getGameboard().length;j++){
                 displayGameboard2DArray[i][j].textContent = Gameboard.getGameboard()[i][j];
             }
+        }
+    }
+    const changeTurnDisplay = function(value){
+        switch(value){
+            case true:
+                turnDisplay.textContent = "Its YOUR turn."
+                break;
+            case false:
+                turnDisplay.textContent = "Its OPPONENTS turn."
+                break;
+            default:
+                turnDisplay.textContent = "Tic-Tac-Toe"
+                
         }
     }
     const selectPlayer = function(event){
@@ -204,6 +229,9 @@ const GameController = (() =>{
 
     }
     let playerTurn = true;
+    const getCurrentTurn = function(){
+        return playerTurn;
+    }
     /*
     add turns...
     add computer play (random select from remaining free elements)
@@ -219,11 +247,16 @@ const GameController = (() =>{
         DisplayController.refreshDisplay();
     }
     const currentPlayer = function(){
-        if(playerTurn){
-            return playerOne.getPlayerPiece();
+        if(playerOne){
+            if(playerTurn){
+                return playerOne.getPlayerPiece();
+            }
+            else{
+                return computerPlayer.getPlayerPiece();
+            }
         }
         else{
-            return computerPlayer.getPlayerPiece();
+            return null;
         }
     }
     const endGame = function(){
@@ -239,6 +272,9 @@ const GameController = (() =>{
         console.log("player piece: "+playerOne.getPlayerPiece());
         console.log("opponent: "+computerPlayer.getPlayerPiece());
     }
+    const changeTurn = function(){
+        playerTurn = !playerTurn;
+    }
     return{
         updateGameState,
         endGame,
@@ -246,7 +282,9 @@ const GameController = (() =>{
         getGameWin,
         getPlayers,
         setPlayers,
-        currentPlayer
+        currentPlayer,
+        changeTurn,
+        getCurrentTurn
     };
 })();
 

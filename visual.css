@@ -40,3 +40,6 @@ button{
 .selected{
     background-color: green;
 }
+#turn-display-container{
+    text-align: center;
+}
