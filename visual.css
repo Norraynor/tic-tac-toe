@@ -43,3 +43,13 @@ button{
 #turn-display-container{
     text-align: center;
 }
+#start-button-container{
+    text-align: center;
+    padding:10px;
+}
+#start-button{
+    font-size: 2rem;
+}
+#win-display{
+    text-align: center;
+}

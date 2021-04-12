@@ -24,6 +24,10 @@ const Gameboard = (() =>{
     const getGameboard = function(){
         return gameboard;
     }
+    const get1DGameboard = function(){
+        let gameboard1D = [].concat(...gameboard);
+        return gameboard1D;
+    }
     const checkGameboardFull = function(){
         for(i=0;i<gameboard.length;i++){
             for(j=0;j<gameboard.length;j++){
@@ -87,24 +91,26 @@ const Gameboard = (() =>{
         if(checkRow(indexRow)){
             //check which player wins and alert it - then reset
             console.log(`WIN ${indexRow} row`);
-            GameController.setGameWin(true);
+            GameController.setGameWin(true,indexRow,0);
         }
         if(checkColumn(indexColumn)){
             console.log(`WIN ${indexColumn} column`);
-            GameController.setGameWin(true);
+            GameController.setGameWin(true,0,indexColumn);
         }        
         if(checkDiagonalLeft()){
             console.log(`WIN left`);
-            GameController.setGameWin(true);
+            GameController.setGameWin(true,0,0);
         }
         if(checkDiagonalRight()){
             console.log(`WIN right`);
-            GameController.setGameWin(true);
+            GameController.setGameWin(true,2,2);
         }
     }
     const checkTie = function(){
         if(checkGameboardFull() && !GameController.getGameWin()){
             console.log("its a TIE");
+            GameController.gameStart = false;
+            DisplayController.WinDisplay("Its a Tie");
         }
     }
     return{
@@ -113,7 +119,8 @@ const Gameboard = (() =>{
         cleanGameboard,
         checkGameboardFull,
         checkWin,
-        checkTie
+        checkTie,
+        get1DGameboard
     };
 })();
 
@@ -125,29 +132,46 @@ const DisplayController = (() =>{
     const buttonO = document.querySelector("#o-select");
     const buttonX = document.querySelector("#x-select");
     const turnDisplay = document.querySelector("#turn-display");
+    const startButton = document.querySelector("#start-button");
     let playerSelection;
     let playerSelected;
+    const winText = document.querySelector("#win-text");
 
+    startButton.addEventListener("click",function(){
+        if(playerSelected){
+            GameController.setGameStart(true);
+            
+            if(GameController.getGameStart()){
+                startButton.textContent = "RESTART";
+                GameController.restartGame();
+            }
+            else{
+                startButton.textContent = "START";
+                GameController.restartGame();
+            }
+        }
+    })
+
+    //gameboard display setup
     while(displayGameboardArray.length) {
         displayGameboard2DArray.push(displayGameboardArray.splice(0,Gameboard.getGameboard().length));
     }
-    
+    //gameboard click setup
     for(i=0;i<Gameboard.getGameboard().length;i++){
         for(j=0;j<Gameboard.getGameboard().length;j++){
             displayGameboard2DArray[i][j].textContent = Gameboard.getGameboard()[i][j];
             displayGameboard2DArray[i][j].index = (i+""+j);
 
             displayGameboard2DArray[i][j].addEventListener("click", function(){
-                if(gameStarted){
+                if(GameController.getGameStart()){
                     //should be possible to change anything only when game is started
+                    Gameboard.setGameboard(parseInt(this.index.toString().slice(0,1)), parseInt(this.index.toString().slice(1)),GameController.currentPlayer());
+                    Gameboard.checkWin(parseInt(this.index.toString().slice(0,1)), parseInt(this.index.toString().slice(1)));
+                    Gameboard.checkTie();
+                    GameController.updateGameState();
+                    //set turn 
+                    GameController.changeTurn();
                 }
-                Gameboard.setGameboard(parseInt(this.index.toString().slice(0,1)), parseInt(this.index.toString().slice(1)),GameController.currentPlayer());
-                Gameboard.checkWin(parseInt(this.index.toString().slice(0,1)), parseInt(this.index.toString().slice(1)));
-                Gameboard.checkTie();
-                GameController.updateGameState();
-                //set turn 
-                GameController.changeTurn();
-                changeTurnDisplay(GameController.getCurrentTurn());
             });
         }
     }
@@ -157,6 +181,7 @@ const DisplayController = (() =>{
                 displayGameboard2DArray[i][j].textContent = Gameboard.getGameboard()[i][j];
             }
         }
+        changeTurnDisplay(GameController.getCurrentTurn());
     }
     const changeTurnDisplay = function(value){
         switch(value){
@@ -194,57 +219,109 @@ const DisplayController = (() =>{
     const getPlayerSelection = function(){
         return playerSelection; 
     }
+
     buttonO.addEventListener("click",selectPlayer);
     buttonX.addEventListener("click",selectPlayer);
+
+    const winDisplay = function(winnerMSG){
+        winText.textContent = winnerMSG;
+    }
+
     return {
         refreshDisplay,
-        getPlayerSelection
+        getPlayerSelection,
+        winDisplay
     };
 })();
 
 //players objects - factory
-const Player = (playerPiece)=>{  
+const Player = (playerPiece,name)=>{  
     const playerSelectedPiece = playerPiece;
+    const playerName = name;
     const getPlayerPiece = function(){
         return playerSelectedPiece;
     }
+    const getPlayerName = function(){
+        return playerName;
+    }
+    //add computer play here
+    const computerPlay = function(){
+        //get gameboard
+        const gameboardState = Gameboard.get1DGameboard();
+        //look for free tiles
+        let freeIndexes = [];
+        for(i=0;i<gameboardState.length;i++){
+            if(gameboardState[i] === null){
+                freeIndexes.push(i);
+            }
+        }
+        //get random tile from free tiles and place mark there
+        let selectedTile = freeIndexes[Math.floor(Math.random()*freeIndexes.length)];
+        if(GameController.getGameStart() && freeIndexes.length){            
+            //should be possible to change anything only when game is started
+            Gameboard.setGameboard(Math.floor(selectedTile/Gameboard.getGameboard().length), (selectedTile%3),GameController.currentPlayer());
+            Gameboard.checkWin(Math.floor(selectedTile/Gameboard.getGameboard().length), (selectedTile%3));
+            Gameboard.checkTie();
+            //set turn 
+            GameController.changeTurn();
+            GameController.updateGameState();
+        }
+    }
     return{
-        getPlayerPiece
+        getPlayerPiece,
+        computerPlay,
+        getPlayerName
     }
 }
 
 //game controller object - module (IIFE)
 const GameController = (() =>{
+    let gameStart = false;
     let gameEnd = false;
     let playerOne;
     let computerPlayer;
+    let playerTurn = true;
+    let winner = null;
+
     const setPlayers = function(playerPiece){
-        playerOne = Player(playerPiece);
+        playerOne = Player(playerPiece,"PLAYER");
         if(playerPiece === "x"){
-            computerPlayer = Player("o");
+            computerPlayer = Player("o","COMPUTER");
         }
         if(playerPiece === "o"){
-            computerPlayer = Player("x");
+            computerPlayer = Player("x","COMPUTER");
         }
 
     }
-    let playerTurn = true;
     const getCurrentTurn = function(){
         return playerTurn;
     }
+    const getGameStart = function(){
+        return gameStart;
+    }
+    const setGameStart = function(value){
+        gameStart = value;
+    }
+    
     /*
-    add turns...
-    add computer play (random select from remaining free elements)
-    add win message or lose or tie
-    add start/restart button
+    fix a bug where you can click occupied space and it will still change turn to opponent
     */
     //control the flow of the game
     const updateGameState = function(){
-        if(Gameboard.checkGameboardFull()){
+        if(Gameboard.checkGameboardFull() || winner){
             //go to endgame function where winner and end screen is displayed
-            Gameboard.cleanGameboard();
+            //Gameboard.cleanGameboard();
+            endGame();
         }
         DisplayController.refreshDisplay();
+    }
+    const restartGame = function(){
+        Gameboard.cleanGameboard();
+        gameEnd = false;
+        playerTurn = true;
+        updateGameState();
+        winner = null
+        DisplayController.winDisplay("");
     }
     const currentPlayer = function(){
         if(playerOne){
@@ -260,10 +337,37 @@ const GameController = (() =>{
         }
     }
     const endGame = function(){
+        gameStart = false;
+        gameEnd = true;
+        console.log("game ended");
+        if(gameStart === false && gameEnd){
+            DisplayController.winDisplay("");
+        }
+        if(winner === playerOne.getPlayerName()){
+            DisplayController.winDisplay("You have WON the game!");
+        }
+        if(winner === computerPlayer.getPlayerName()){
+            DisplayController.winDisplay("Losing is just an opportunity to shine even brighter!");
+        }
         //end the game and reset board
     }
-    const setGameWin = function(value){
+    const setWinner = function(value){
+        if(value === playerOne.getPlayerPiece()){
+            winner = playerOne.getPlayerName();
+        }
+        if(value === computerPlayer.getPlayerPiece()){
+            winner = computerPlayer.getPlayerName();
+        }
+    }
+    const getWinner = function(){
+        return winner;
+    }
+    const setGameWin = function(value,x,y){
         gameEnd = value;
+        if(value ===true){
+            gameStart = false;
+            setWinner(Gameboard.getGameboard()[x][y]);
+        }
     }
     const getGameWin = function(){
         return gameEnd;
@@ -274,6 +378,12 @@ const GameController = (() =>{
     }
     const changeTurn = function(){
         playerTurn = !playerTurn;
+        if(!playerTurn){
+            computerPlay();
+        }
+    }
+    const computerPlay = function(){
+        computerPlayer.computerPlay();
     }
     return{
         updateGameState,
@@ -284,7 +394,13 @@ const GameController = (() =>{
         setPlayers,
         currentPlayer,
         changeTurn,
-        getCurrentTurn
+        getCurrentTurn,
+        getGameStart,
+        setGameStart,
+        restartGame,
+        computerPlay,
+        setWinner,
+        getWinner
     };
 })();
 
