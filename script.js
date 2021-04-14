@@ -8,16 +8,17 @@ const Gameboard = (() =>{
                     ["T","O","E"]];
     const setGameboard = function(x,y,value){
         if(value === null){
-            return;
+            return false;
         }
         else{
             if(gameboard[x][y] === null){
                 //if playerX then place X
                 //if playerO then place O
                 gameboard[x][y] = value;
+                return true;
             }
             else{
-                return;
+                return false;
             }
         }
     }
@@ -103,14 +104,14 @@ const Gameboard = (() =>{
         }
         if(checkDiagonalRight()){
             console.log(`WIN right`);
-            GameController.setGameWin(true,2,2);
+            GameController.setGameWin(true,0,2);
         }
     }
     const checkTie = function(){
         if(checkGameboardFull() && !GameController.getGameWin()){
             console.log("its a TIE");
             GameController.gameStart = false;
-            DisplayController.WinDisplay("Its a Tie");
+            DisplayController.winDisplay("Its a Tie");
         }
     }
     return{
@@ -165,12 +166,15 @@ const DisplayController = (() =>{
             displayGameboard2DArray[i][j].addEventListener("click", function(){
                 if(GameController.getGameStart()){
                     //should be possible to change anything only when game is started
-                    Gameboard.setGameboard(parseInt(this.index.toString().slice(0,1)), parseInt(this.index.toString().slice(1)),GameController.currentPlayer());
-                    Gameboard.checkWin(parseInt(this.index.toString().slice(0,1)), parseInt(this.index.toString().slice(1)));
-                    Gameboard.checkTie();
-                    GameController.updateGameState();
-                    //set turn 
-                    GameController.changeTurn();
+                    if(Gameboard.setGameboard(parseInt(this.index.toString().slice(0,1)), parseInt(this.index.toString().slice(1)),GameController.currentPlayer())){
+                        console.log("do i get here?")
+                        Gameboard.checkWin(parseInt(this.index.toString().slice(0,1)), parseInt(this.index.toString().slice(1)));
+                        Gameboard.checkTie();
+                        GameController.updateGameState();
+                        //set turn 
+                        GameController.changeTurn();
+                    }
+                    
                 }
             });
         }
@@ -224,6 +228,7 @@ const DisplayController = (() =>{
     buttonX.addEventListener("click",selectPlayer);
 
     const winDisplay = function(winnerMSG){
+        console.log(winText);
         winText.textContent = winnerMSG;
     }
 
@@ -302,10 +307,7 @@ const GameController = (() =>{
     const setGameStart = function(value){
         gameStart = value;
     }
-    
-    /*
-    fix a bug where you can click occupied space and it will still change turn to opponent
-    */
+
     //control the flow of the game
     const updateGameState = function(){
         if(Gameboard.checkGameboardFull() || winner){
@@ -320,7 +322,8 @@ const GameController = (() =>{
         gameEnd = false;
         playerTurn = true;
         updateGameState();
-        winner = null
+        winner = null;
+        gameStart = true;
         DisplayController.winDisplay("");
     }
     const currentPlayer = function(){
@@ -342,6 +345,9 @@ const GameController = (() =>{
         console.log("game ended");
         if(gameStart === false && gameEnd){
             DisplayController.winDisplay("");
+        }
+        if(!winner){
+            DisplayController.winDisplay("Tie!");
         }
         if(winner === playerOne.getPlayerName()){
             DisplayController.winDisplay("You have WON the game!");
