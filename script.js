@@ -25,8 +25,8 @@ const Gameboard = (() =>{
     const getGameboard = function(){
         return gameboard;
     }
-    const get1DGameboard = function(){
-        let gameboard1D = [].concat(...gameboard);
+    const get1DGameboard = function(board){
+        let gameboard1D = [].concat(...board);
         return gameboard1D;
     }
     const checkGameboardFull = function(){
@@ -112,7 +112,19 @@ const Gameboard = (() =>{
             console.log("its a TIE");
             GameController.gameStart = false;
             DisplayController.winDisplay("Its a Tie");
+            return true;
         }
+        return false;
+    }
+    const getFreeTiles = function(board){
+        let freeIndexes = [];
+        const gameboardState = get1DGameboard(board);
+        for(i=0;i<gameboardState.length;i++){
+            if(gameboardState[i] === null){
+                freeIndexes.push(i);
+            }
+        }
+        return freeIndexes;
     }
     return{
         setGameboard, 
@@ -121,7 +133,8 @@ const Gameboard = (() =>{
         checkGameboardFull,
         checkWin,
         checkTie,
-        get1DGameboard
+        get1DGameboard,
+        getFreeTiles
     };
 })();
 
@@ -250,32 +263,131 @@ const Player = (playerPiece,name)=>{
         return playerName;
     }
     //add computer play here
-    const computerPlay = function(){
-        //get gameboard
-        const gameboardState = Gameboard.get1DGameboard();
+    const computerPlay = function(superAI=false){
         //look for free tiles
-        let freeIndexes = [];
-        for(i=0;i<gameboardState.length;i++){
-            if(gameboardState[i] === null){
-                freeIndexes.push(i);
-            }
-        }
+        let freeIndexes = Gameboard.getFreeTiles(Gameboard.getGameboard());
         //get random tile from free tiles and place mark there
         let selectedTile = freeIndexes[Math.floor(Math.random()*freeIndexes.length)];
-        if(GameController.getGameStart() && freeIndexes.length){            
-            //should be possible to change anything only when game is started
-            Gameboard.setGameboard(Math.floor(selectedTile/Gameboard.getGameboard().length), (selectedTile%3),GameController.currentPlayer());
-            Gameboard.checkWin(Math.floor(selectedTile/Gameboard.getGameboard().length), (selectedTile%3));
-            Gameboard.checkTie();
-            //set turn 
-            GameController.changeTurn();
-            GameController.updateGameState();
+        if(GameController.getGameStart() && freeIndexes.length){        
+            if(!superAI){
+                console.log("easy mode");
+                //should be possible to change anything only when game is started
+                Gameboard.setGameboard(Math.floor(selectedTile/Gameboard.getGameboard().length), (selectedTile%3),GameController.currentPlayer());
+                Gameboard.checkWin(Math.floor(selectedTile/Gameboard.getGameboard().length), (selectedTile%3));
+                Gameboard.checkTie();
+                //set turn 
+                GameController.changeTurn();
+                GameController.updateGameState();
+            }
+            else{
+                console.log("hard mode");
+                //should be possible to change anything only when game is started
+                Gameboard.setGameboard(Math.floor(bestSpot()/Gameboard.getGameboard().length), (bestSpot()%3),GameController.currentPlayer());
+                console.log(Math.floor(bestSpot()/Gameboard.getGameboard().length));
+                console.log((bestSpot()%3));
+                Gameboard.checkWin(Math.floor(bestSpot()/Gameboard.getGameboard().length), (bestSpot()%3));
+                Gameboard.checkTie();
+                //set turn 
+                GameController.changeTurn();
+                GameController.updateGameState();
+            }
         }
     }
+    const bestSpot = function(){
+        return minimax(Gameboard.get1DGameboard(Gameboard.getGameboard()),GameController.getPlayers().computer).index;
+    }
+    const AICheckWin = function(board,player){
+            if(board[0] === player.getPlayerPiece() && board[1] === player.getPlayerPiece() && board[2] === player.getPlayerPiece()){
+                return true;
+            }
+            if(board[3] === player.getPlayerPiece() && board[4] === player.getPlayerPiece() && board[5] === player.getPlayerPiece()){
+                return true;
+            }
+            if(board[6] === player.getPlayerPiece() && board[7] === player.getPlayerPiece() && board[8] === player.getPlayerPiece()){
+                return true;
+            }
+            if(board[0] === player.getPlayerPiece() && board[3] === player.getPlayerPiece() && board[6] === player.getPlayerPiece()){
+                return true;
+            }
+            if(board[1] === player.getPlayerPiece() && board[4] === player.getPlayerPiece() && board[7] === player.getPlayerPiece()){
+                return true;
+            }
+            if(board[2] === player.getPlayerPiece() && board[5] === player.getPlayerPiece() && board[8] === player.getPlayerPiece()){
+                return true;
+            }
+            if(board[0] === player.getPlayerPiece() && board[4] === player.getPlayerPiece() && board[8] === player.getPlayerPiece()){
+                return true;
+            }
+            if(board[2] === player.getPlayerPiece() && board[4] === player.getPlayerPiece() && board[6] === player.getPlayerPiece()){
+                return true;
+            }
+        return false;
+    }
+
+    const minimax = function(board,player){
+        //console.log(board);
+        //get all empty tiles
+        let freeTiles = Gameboard.getFreeTiles(board);
+        //check if game is won on new board
+        if(AICheckWin(board,GameController.getPlayers().player)){
+            return {
+                score: -10
+            };
+        }
+        else if(AICheckWin(board,GameController.getPlayers().computer)){
+            return {
+                score: 10
+            };
+        }
+        else if(freeTiles.length === 0){
+            return {
+                score: 0
+            };
+        }
+        let moves = [];
+        for(i=0;i<freeTiles.length;i++){
+            let move = {};
+            move.index = board[freeTiles[i]];
+            //move.index = freeTiles[i];
+            board[freeTiles[i]] = player.getPlayerPiece();
+            if(player === GameController.getPlayers().computer){
+                let result = minimax(board,GameController.getPlayers().player);
+                move.score = result.score;
+            }
+            else {
+                let result = minimax(board,GameController.getPlayers().computer);
+                move.score = result.score;
+            }
+            board[freeTiles[i]] = move.index;
+            moves.push(move);
+        }
+        let bestMove;
+        if(player === GameController.getPlayers().computer){
+            let bestScore = -10000;
+            for(i=0;i<moves.length;i++){
+                if(moves[i].score>bestScore){
+                    bestScore = moves[i].score;
+                    bestMove = i;
+                }
+            }
+        }
+        else{
+            let bestScore = 10000;
+            for(i=0;i<moves.length;i++){
+                if(moves[i].score<bestScore){
+                    bestScore = moves[i].score;
+                    bestMove = i;
+                }
+            }
+        }
+        return moves[bestMove];
+    }
+    
     return{
         getPlayerPiece,
         computerPlay,
-        getPlayerName
+        getPlayerName,
+        bestSpot
     }
 }
 
@@ -379,8 +491,12 @@ const GameController = (() =>{
         return gameEnd;
     }
     const getPlayers = function(){
-        console.log("player piece: "+playerOne.getPlayerPiece());
-        console.log("opponent: "+computerPlayer.getPlayerPiece());
+        //console.log("player piece: "+playerOne.getPlayerPiece());
+        //console.log("opponent: "+computerPlayer.getPlayerPiece());
+        return{
+            player: playerOne,
+            computer: computerPlayer
+        }
     }
     const changeTurn = function(){
         playerTurn = !playerTurn;
@@ -389,7 +505,9 @@ const GameController = (() =>{
         }
     }
     const computerPlay = function(){
-        computerPlayer.computerPlay();
+        computerPlayer.computerPlay(true);
+        console.log(computerPlayer.bestSpot());
+        //computerPlayer.playBestMove(playerOne.getPlayerPiece(),computerPlayer.getPlayerPiece());
     }
     return{
         updateGameState,
