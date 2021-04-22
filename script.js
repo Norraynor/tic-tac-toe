@@ -180,7 +180,6 @@ const DisplayController = (() =>{
                 if(GameController.getGameStart()){
                     //should be possible to change anything only when game is started
                     if(Gameboard.setGameboard(parseInt(this.index.toString().slice(0,1)), parseInt(this.index.toString().slice(1)),GameController.currentPlayer())){
-                        console.log("do i get here?")
                         Gameboard.checkWin(parseInt(this.index.toString().slice(0,1)), parseInt(this.index.toString().slice(1)));
                         Gameboard.checkTie();
                         GameController.updateGameState();
@@ -282,10 +281,12 @@ const Player = (playerPiece,name)=>{
             else{
                 console.log("hard mode");
                 //should be possible to change anything only when game is started
-                Gameboard.setGameboard(Math.floor(bestSpot()/Gameboard.getGameboard().length), (bestSpot()%3),GameController.currentPlayer());
-                console.log(Math.floor(bestSpot()/Gameboard.getGameboard().length));
-                console.log((bestSpot()%3));
-                Gameboard.checkWin(Math.floor(bestSpot()/Gameboard.getGameboard().length), (bestSpot()%3));
+                let index = bestSpot();
+                console.log(index);
+                Gameboard.setGameboard(Math.floor(index/Gameboard.getGameboard().length), (index%3),GameController.currentPlayer());
+                console.log(Math.floor(index/Gameboard.getGameboard().length));
+                console.log(index%3);
+                Gameboard.checkWin(Math.floor(index/Gameboard.getGameboard().length), (index%3));
                 Gameboard.checkTie();
                 //set turn 
                 GameController.changeTurn();
@@ -325,7 +326,6 @@ const Player = (playerPiece,name)=>{
     }
 
     const minimax = function(board,player){
-        //console.log(board);
         //get all empty tiles
         let freeTiles = Gameboard.getFreeTiles(board);
         //check if game is won on new board
@@ -345,10 +345,10 @@ const Player = (playerPiece,name)=>{
             };
         }
         let moves = [];
-        for(i=0;i<freeTiles.length;i++){
+        for(let i=0;i<freeTiles.length;i++){
             let move = {};
-            move.index = board[freeTiles[i]];
-            //move.index = freeTiles[i];
+            move.tile = board[freeTiles[i]];
+            move.index = freeTiles[i];
             board[freeTiles[i]] = player.getPlayerPiece();
             if(player === GameController.getPlayers().computer){
                 let result = minimax(board,GameController.getPlayers().player);
@@ -358,13 +358,13 @@ const Player = (playerPiece,name)=>{
                 let result = minimax(board,GameController.getPlayers().computer);
                 move.score = result.score;
             }
-            board[freeTiles[i]] = move.index;
+            board[freeTiles[i]] = move.tile;
             moves.push(move);
         }
         let bestMove;
         if(player === GameController.getPlayers().computer){
             let bestScore = -10000;
-            for(i=0;i<moves.length;i++){
+            for(let i=0;i<moves.length;i++){
                 if(moves[i].score>bestScore){
                     bestScore = moves[i].score;
                     bestMove = i;
@@ -373,7 +373,7 @@ const Player = (playerPiece,name)=>{
         }
         else{
             let bestScore = 10000;
-            for(i=0;i<moves.length;i++){
+            for(let i=0;i<moves.length;i++){
                 if(moves[i].score<bestScore){
                     bestScore = moves[i].score;
                     bestMove = i;
