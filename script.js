@@ -145,10 +145,14 @@ const DisplayController = (() =>{
     const displayGameboard2DArray = [];
     const buttonO = document.querySelector("#o-select");
     const buttonX = document.querySelector("#x-select");
+    const easyButton = document.querySelector("#easy");
+    const hardButton = document.querySelector("#hard");
     const turnDisplay = document.querySelector("#turn-display");
     const startButton = document.querySelector("#start-button");
     let playerSelection;
     let playerSelected;
+    let modeSelection;
+    let modeSelected;
     const winText = document.querySelector("#win-text");
 
     startButton.addEventListener("click",function(){
@@ -185,8 +189,7 @@ const DisplayController = (() =>{
                         GameController.updateGameState();
                         //set turn 
                         GameController.changeTurn();
-                    }
-                    
+                    }                    
                 }
             });
         }
@@ -235,9 +238,31 @@ const DisplayController = (() =>{
     const getPlayerSelection = function(){
         return playerSelection; 
     }
+    const selectMode = function(event){
+        if(!modeSelection){
+            modeSelection = event.target.dataset.mode;
+            modeSelected = true;
+            if(event.target.dataset.mode === "easy"){
+                if(!event.target.classList.contains("selected") && !hardButton.classList.contains("selected")){
+                    event.target.classList.add("selected");
+                }
+            }
+            if(event.target.dataset.mode === "hard"){
+                if(!event.target.classList.contains("selected") && !easyButton.classList.contains("selected")){
+                    event.target.classList.add("selected");
+                }
+            }
+            GameController.setMode(modeSelection);
+        }
+        else{
+            console.log("mode already selected");
+        }
+    }
 
     buttonO.addEventListener("click",selectPlayer);
     buttonX.addEventListener("click",selectPlayer);
+    easyButton.addEventListener("click",selectMode);
+    hardButton.addEventListener("click",selectMode);
 
     const winDisplay = function(winnerMSG){
         console.log(winText);
@@ -399,6 +424,7 @@ const GameController = (() =>{
     let computerPlayer;
     let playerTurn = true;
     let winner = null;
+    let difficulty = false; //easy
 
     const setPlayers = function(playerPiece){
         playerOne = Player(playerPiece,"PLAYER");
@@ -408,7 +434,16 @@ const GameController = (() =>{
         if(playerPiece === "o"){
             computerPlayer = Player("x","COMPUTER");
         }
-
+    }
+    const setMode = function(mode){
+        if(mode === "easy"){
+            //set ai mode to easy
+            difficulty=false;
+        }
+        if(mode === "hard"){
+            //set ai mode to hard
+            difficulty=true;
+        }
     }
     const getCurrentTurn = function(){
         return playerTurn;
@@ -505,7 +540,7 @@ const GameController = (() =>{
         }
     }
     const computerPlay = function(){
-        computerPlayer.computerPlay(true);
+        computerPlayer.computerPlay(difficulty);
         console.log(computerPlayer.bestSpot());
         //computerPlayer.playBestMove(playerOne.getPlayerPiece(),computerPlayer.getPlayerPiece());
     }
@@ -524,7 +559,8 @@ const GameController = (() =>{
         restartGame,
         computerPlay,
         setWinner,
-        getWinner
+        getWinner,
+        setMode
     };
 })();
 
